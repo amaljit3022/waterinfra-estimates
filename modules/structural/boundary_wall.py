@@ -66,6 +66,3 @@ def calculate(
         },
         "cost": {}
     }
-    
- def excavation_volume(length, width, depth):
-    return length * width * depth
