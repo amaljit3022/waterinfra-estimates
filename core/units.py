@@ -29,3 +29,9 @@ def cm_to_m(value_cm: float) -> float:
 
 def cum_to_litre(volume_cum: float) -> float:
     return volume_cum * CUM_TO_LITRE
+    
+def format_cum(value: float) -> str:
+    return f"{value:.2f} m³"
+
+def format_number(value: float) -> str:
+    return f"{value:.2f}"

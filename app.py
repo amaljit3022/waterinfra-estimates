@@ -1,5 +1,11 @@
 import streamlit as st
 from modules.structural.boundary_wall import calculate
+from core.units import format_cum
+from core.formatting import number_to_words
+
+# =========================
+# PAGE CONFIG
+# =========================
 
 st.set_page_config(
     page_title="WaterInfra Estimates",
@@ -10,7 +16,7 @@ st.title("🏗 WaterInfra Estimate Engine")
 st.markdown("Professional Civil & Water Infrastructure Estimation Platform")
 
 # =========================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # =========================
 
 st.sidebar.title("Modules")
@@ -22,11 +28,15 @@ module = st.sidebar.selectbox(
 
 mode = st.sidebar.radio(
     "Calculation Mode",
-    ["design", "practical"]
+    ["design", "practical"],
+    index=0
 )
 
+st.sidebar.markdown("---")
+st.sidebar.info("Mode: Design = Engineering Precision\n\nPractical = Includes site allowances")
+
 # =========================
-# BOUNDARY WALL MODULE
+# MODULE: BOUNDARY WALL
 # =========================
 
 if module == "Boundary Wall":
@@ -47,6 +57,8 @@ if module == "Boundary Wall":
         foundation_width = st.number_input("Foundation Width (m)", min_value=0.0, value=0.6)
         grade = st.selectbox("Concrete Grade", ["M10", "M15", "M20"])
 
+    st.markdown("---")
+
     if st.button("Calculate Estimate"):
 
         result = calculate(
@@ -59,26 +71,64 @@ if module == "Boundary Wall":
             mode=mode
         )
 
-        st.success("Calculation Completed")
+        st.success("Calculation Completed Successfully")
 
         tab1, tab2, tab3 = st.tabs(["📦 Quantities", "🧱 Materials", "💰 Cost"])
 
         # =========================
-        # TAB 1 - QUANTITIES
+        # TAB 1 – QUANTITIES
         # =========================
         with tab1:
             st.subheader("Quantity Summary")
-            st.json(result["quantities"])
+
+            q = result["quantities"]
+
+            st.markdown("### 🏗 Excavation")
+            st.write(format_cum(q["excavation_cum"]))
+            st.caption(number_to_words(q["excavation_cum"], "Cubic Metres"))
+
+            st.markdown("### 🧱 PCC")
+            st.write(format_cum(q["pcc_cum"]))
+            st.caption(number_to_words(q["pcc_cum"], "Cubic Metres"))
+
+            st.markdown("### 🧱 Brickwork")
+            st.write(format_cum(q["brickwork_cum"]))
+            st.caption(number_to_words(q["brickwork_cum"], "Cubic Metres"))
+
+            st.markdown("### 🧱 Number of Bricks")
+            st.write(f"{q['number_of_bricks']:,}")
+            st.caption(number_to_words(q["number_of_bricks"], "Bricks"))
+
+            st.markdown("### 🧱 Mortar")
+            st.write(format_cum(q["mortar_cum"]))
+            st.caption(number_to_words(q["mortar_cum"], "Cubic Metres"))
 
         # =========================
-        # TAB 2 - MATERIALS
+        # TAB 2 – MATERIALS
         # =========================
         with tab2:
             st.subheader("Material Breakdown")
-            st.json(result["materials"])
+
+            materials = result["materials"]["pcc_materials"]
+
+            st.markdown("### Cement")
+            st.write(f"{materials['cement_bags']} Bags")
+            st.caption(number_to_words(materials["cement_bags"], "Bags"))
+
+            st.markdown("### Sand")
+            st.write(format_cum(materials["sand_cum"]))
+            st.caption(number_to_words(materials["sand_cum"], "Cubic Metres"))
+
+            st.markdown("### Aggregate")
+            st.write(format_cum(materials["aggregate_cum"]))
+            st.caption(number_to_words(materials["aggregate_cum"], "Cubic Metres"))
+
+            st.markdown("### Water")
+            st.write(f"{materials['water_litres']} Litres")
+            st.caption(number_to_words(materials["water_litres"], "Litres"))
 
         # =========================
-        # TAB 3 - COST
+        # TAB 3 – COST (Future Phase)
         # =========================
         with tab3:
-            st.info("Cost engine will be integrated in Phase 2.")
+            st.info("Cost engine will be integrated in Phase 2 (SOR + BOQ automation).")
