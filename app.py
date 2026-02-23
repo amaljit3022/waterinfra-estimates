@@ -2,6 +2,7 @@ import streamlit as st
 from modules.structural.boundary_wall import calculate
 from core.units import format_cum
 from core.formatting import number_to_words
+from core.soil import get_sbc, required_foundation_width
 
 # =========================
 # PAGE CONFIG
@@ -57,6 +58,18 @@ if module == "Boundary Wall":
         foundation_width = st.number_input("Foundation Width (m)", min_value=0.0, value=0.6)
         grade = st.selectbox("Concrete Grade", ["M10", "M15", "M20"])
 
+    # SBC Inputs (Correct Placement — OUTSIDE calculate call)
+    soil_type = st.selectbox(
+        "Soil Type",
+        ["Soft Clay", "Medium Clay", "Loose Sand", "Medium Sand", "Dense Sand", "Hard Soil", "Rock"]
+    )
+
+    custom_sbc = st.number_input(
+        "Override SBC (kN/m²) - Optional",
+        min_value=0.0,
+        value=0.0
+    )
+
     st.markdown("---")
 
     if st.button("Calculate Estimate"):
@@ -73,14 +86,43 @@ if module == "Boundary Wall":
 
         st.success("Calculation Completed Successfully")
 
-        tab1, tab2, tab3 = st.tabs(["📦 Quantities", "🧱 Materials", "💰 Cost"])
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["📦 Quantities", "🧱 Materials", "💰 Cost", "🧠 Engineering"]
+        )
+
+        # =========================
+        # TAB 4 – ENGINEERING CHECK
+        # =========================
+        with tab4:
+
+            sbc_value = custom_sbc if custom_sbc > 0 else get_sbc(soil_type)
+
+            eng = result["engineering"]
+            soil_pressure = eng["soil_pressure_kNm2"]
+
+            st.subheader("Soil Bearing Check")
+
+            st.write(f"Soil Bearing Capacity (SBC): {sbc_value} kN/m²")
+            st.write(f"Calculated Soil Pressure: {soil_pressure} kN/m²")
+
+            if soil_pressure <= sbc_value:
+                st.success("SAFE: Soil pressure is within allowable SBC.")
+            else:
+                st.error("UNSAFE: Soil pressure exceeds SBC.")
+
+                required_width = required_foundation_width(
+                    eng["total_load_kN_per_m"],
+                    sbc_value
+                )
+
+                st.warning(f"Suggested Minimum Foundation Width: {required_width} m")
 
         # =========================
         # TAB 1 – QUANTITIES
         # =========================
         with tab1:
-            st.subheader("Quantity Summary")
 
+            st.subheader("Quantity Summary")
             q = result["quantities"]
 
             st.markdown("### 🏗 Excavation")
@@ -107,8 +149,8 @@ if module == "Boundary Wall":
         # TAB 2 – MATERIALS
         # =========================
         with tab2:
-            st.subheader("Material Breakdown")
 
+            st.subheader("Material Breakdown")
             materials = result["materials"]["pcc_materials"]
 
             st.markdown("### Cement")
@@ -128,7 +170,7 @@ if module == "Boundary Wall":
             st.caption(number_to_words(materials["water_litres"], "Litres"))
 
         # =========================
-        # TAB 3 – COST (Future Phase)
+        # TAB 3 – COST
         # =========================
         with tab3:
             st.info("Cost engine will be integrated in Phase 2 (SOR + BOQ automation).")
