@@ -7,6 +7,7 @@ Uses core calculation engine.
 
 from core.concrete import calculate_volume, calculate_materials_for_grade
 from core.earthwork import excavation_volume
+from core.masonry import brick_count, mortar_volume
 
 
 def calculate(
@@ -40,11 +41,15 @@ def calculate(
     )
 
     # 3️⃣ Brickwork Volume
+    # 3️⃣ Brickwork Volume
     brickwork_volume = calculate_volume(
         length_m,
         wall_thickness_m,
         height_m
     )
+
+    bricks_required = brick_count(brickwork_volume, mode=mode)
+    mortar_required = mortar_volume(brickwork_volume)
 
     return {
         "input": {
@@ -60,6 +65,8 @@ def calculate(
             "excavation_cum": round(excavation, 3),
             "pcc_cum": round(pcc_volume, 3),
             "brickwork_cum": round(brickwork_volume, 3),
+            "number_of_bricks": bricks_required,
+            "mortar_cum": mortar_required,
         },
         "materials": {
             "pcc_materials": pcc_materials,
